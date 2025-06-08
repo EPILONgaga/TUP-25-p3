@@ -17,6 +17,9 @@ class Program
 
     static void Main()
     {
+
+        CargarContactos();
+
         while (true)
         {
             MostrarMenu();
@@ -42,6 +45,8 @@ class Program
                     break;
                 case "6":
                     Salir();
+
+                    WriteLine("Saliendo del programa...");
                     break;
                 default:
                     WriteLine("Opción no válida. Intente de nuevo.");
@@ -183,3 +188,5 @@ class Program
         Environment.Exit(0);
     }
 }
+
+
