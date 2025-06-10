@@ -1,3 +1,4 @@
+
 public class Compra
 {
     public int Id { get; set; }
