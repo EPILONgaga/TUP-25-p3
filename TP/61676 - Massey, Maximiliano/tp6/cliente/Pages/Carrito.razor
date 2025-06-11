@@ -1,0 +1,150 @@
+@page "/carrito"
+@using cliente.Services
+@inject ApiService ApiService
+@inject IJSRuntime JS
+
+<PageTitle>Carrito</PageTitle>
+
+<h2>Carrito de compras</h2>
+
+@if (cargando)
+{
+    <div class="alert alert-info">Cargando carrito...</div>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger">Error: @error</div>
+}
+else if (items != null && items.Count > 0)
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Imagen</th>
+                <th>Producto</th>
+                <th>Precio</th>
+                <th>Cantidad</th>
+                <th>Subtotal</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in items)
+            {
+                <tr>
+                    <td><img src="@item.imagen" alt="@item.nombre" style="width:60px;height:60px;object-fit:cover;"></td>
+                    <td>@item.nombre</td>
+                    <td>$@item.precio</td>
+                    <td>@item.cantidad</td>
+                    <td>$@item.subtotal</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" @onclick="() => QuitarProducto(item.id)">Quitar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <div class="mb-3">
+        <b>Total: $@items.Sum(i => i.subtotal)</b>
+    </div>
+    <button class="btn btn-primary" @onclick="MostrarFormulario">Confirmar compra</button>
+}
+else
+{
+    <div>No hay productos en el carrito.</div>
+}
+
+@if (mostrarFormulario)
+{
+    <div class="card mt-4" style="max-width:400px;">
+        <div class="card-header">Confirmar compra</div>
+        <div class="card-body">
+            <EditForm Model="form" OnValidSubmit="ConfirmarCompra">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="mb-2">
+                    <label>Nombre</label>
+                    <InputText class="form-control" @bind-Value="form.NombreCliente" />
+                </div>
+                <div class="mb-2">
+                    <label>Apellido</label>
+                    <InputText class="form-control" @bind-Value="form.ApellidoCliente" />
+                </div>
+                <div class="mb-2">
+                    <label>Email</label>
+                    <InputText class="form-control" @bind-Value="form.EmailCliente" />
+                </div>
+                <button class="btn btn-success" type="submit">Confirmar</button>
+                <button class="btn btn-secondary ms-2" type="button" @onclick="() => mostrarFormulario = false">Cancelar</button>
+            </EditForm>
+            @if (mensaje != null)
+            {
+                <div class="alert alert-info mt-2">@mensaje</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<ItemCarritoDto> items;
+    private string error;
+    private bool cargando = true;
+    private Guid carritoId;
+    private bool mostrarFormulario = false;
+    private ConfirmacionDto form = new();
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            cargando = true;
+            mensaje = null;
+            var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
+            if (!Guid.TryParse(idStr, out carritoId) || carritoId == Guid.Empty)
+            {
+                error = "No hay carrito activo.";
+                return;
+            }
+            items = await ApiService.ObtenerCarritoAsync(carritoId);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task QuitarProducto(int productoId)
+    {
+        await ApiService.QuitarProductoAsync(carritoId, productoId);
+        items = await ApiService.ObtenerCarritoAsync(carritoId);
+        StateHasChanged();
+    }
+
+    private void MostrarFormulario()
+    {
+        mostrarFormulario = true;
+        mensaje = null;
+    }
+
+    private async Task ConfirmarCompra()
+    {
+        mensaje = null;
+        var ok = await ApiService.ConfirmarCompraAsync(carritoId, form);
+        if (ok)
+        {
+            mensaje = "¡Compra confirmada!";
+            await JS.InvokeAsync<object>("localStorage.removeItem", "carritoId");
+            items = new List<ItemCarritoDto>();
+            mostrarFormulario = false;
+        }
+        else
+        {
+            mensaje = "No se pudo confirmar la compra. Verifica los datos y el stock.";
+        }
+    }
+}
