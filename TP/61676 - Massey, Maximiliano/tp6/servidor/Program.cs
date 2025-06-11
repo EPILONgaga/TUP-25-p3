@@ -49,4 +49,64 @@ app.MapGet("/productos", async (ContenidoTiendaDb db, string? busqueda) =>
     return await query.ToListAsync();
 });
 
+
+var carritos = new Dictionary<Guid, Dictionary<int, int>>();
+
+
+app.MapPost("/carritos", () =>
+{
+    var id = Guid.NewGuid();
+    carritos[id] = new Dictionary<int, int>();
+    return Results.Ok(new { id });
+});
+
+app.MapGet("/carritos/{id}", (Guid id) =>
+{
+    if (!carritos.ContainsKey(id))
+        return Results.NotFound();
+    return Results.Ok(carritos[id]);
+});
+
+app.MapPut("/carritos/{id}/{producto}", async (Guid id, int producto, ContenidoTiendaDb db) =>
+{
+    if (!carritos.ContainsKey(id))
+        return Results.NotFound();
+
+    var prod = await db.Productos.FindAsync(producto);
+    if (prod == null)
+        return Results.NotFound("Producto no encontrado");
+
+    if (prod.Stock < 1)
+        return Results.BadRequest("Sin stock");
+
+    if (!carritos[id].ContainsKey(producto))
+        carritos[id][producto] = 0;
+    carritos[id][producto]++;
+
+    return Results.Ok(carritos[id]);
+});
+
+app.MapDelete("/carritos/{id}/{producto}", (Guid id, int producto) =>
+{
+    if (!carritos.ContainsKey(id))
+        return Results.NotFound();
+
+    if (!carritos[id].ContainsKey(producto))
+        return Results.NotFound("Producto no está en el carrito");
+
+    carritos[id][producto]--;
+    if (carritos[id][producto] <= 0)
+        carritos[id].Remove(producto);
+
+    return Results.Ok(carritos[id]);
+});
+
+app.MapDelete("/carritos/{id}", (Guid id) =>
+{
+    if (!carritos.ContainsKey(id))
+        return Results.NotFound();
+    carritos.Remove(id);
+    return Results.Ok("Carrito eliminado");
+});
+
 app.Run();
