@@ -1,0 +1,93 @@
+@page "/productos"
+@using cliente.Services
+@inject ApiService ApiService
+@inject NavigationManager Navigation
+
+<PageTitle>Productos</PageTitle>
+
+<h2>Productos disponibles</h2>
+
+@if (cargando)
+{
+    <div class="alert alert-info">Cargando productos...</div>
+}
+else if (error != null)
+{
+    <div class="alert alert-danger">Error: @error</div>
+}
+else if (productos != null && productos.Count > 0)
+{
+    <div class="row">
+        @foreach (var p in productos)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <img src="@p.imagen" class="card-img-top" alt="@p.nombre" style="max-height:180px;object-fit:cover;">
+                    <div class="card-body">
+                        <h5 class="card-title">@p.nombre</h5>
+                        <p class="card-text">@p.descripcion</p>
+                        <p class="card-text"><b>Precio:</b> $@p.precio</p>
+                        <p class="card-text"><b>Stock:</b> @p.stock</p>
+                        <button class="btn btn-success" @onclick="() => AgregarAlCarrito(p.id)" disabled="@(p.stock < 1)">Agregar al carrito</button>
+                        @if (mensaje != null)
+                        {
+                            <div class="alert alert-info mt-2">@mensaje</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div>No hay productos disponibles.</div>
+}
+
+@code {
+    private List<ProductoDto> productos;
+    private string error;
+    private bool cargando = true;
+    private Guid carritoId;
+    private bool creandoCarrito = false;
+    private string mensaje;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            cargando = true;
+            mensaje = null;
+            // Intentar recuperar carritoId de localStorage (si existe)
+            var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
+            if (!Guid.TryParse(idStr, out carritoId) || carritoId == Guid.Empty)
+            {
+                creandoCarrito = true;
+                carritoId = await ApiService.CrearCarritoAsync();
+                await JS.InvokeAsync<object>("localStorage.setItem", "carritoId", carritoId.ToString());
+                creandoCarrito = false;
+            }
+            productos = await ApiService.ObtenerProductosAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    [Inject] IJSRuntime JS { get; set; }
+
+    private async Task AgregarAlCarrito(int productoId)
+    {
+        mensaje = null;
+        var ok = await ApiService.AgregarProductoAsync(carritoId, productoId);
+        if (ok)
+            mensaje = "Producto agregado al carrito";
+        else
+            mensaje = "No se pudo agregar el producto (sin stock o error)";
+    }
+}
