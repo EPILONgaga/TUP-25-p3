@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
+
 // Agregar servicios CORS para permitir solicitudes desde el cliente
 builder.Services.AddCors(options => {
     options.AddPolicy("AllowClientApp", policy => {
@@ -39,5 +40,13 @@ app.MapGet("/", () => "Servidor API está en funcionamiento");
 
 // Ejemplo de endpoint de API
 app.MapGet("/api/datos", () => new { Mensaje = "Datos desde el servidor", Fecha = DateTime.Now });
+
+app.MapGet("/productos", async (ContenidoTiendaDb db, string? busqueda) =>
+{
+    var query = db.Productos.AsQueryable();
+    if (!string.IsNullOrWhiteSpace(busqueda))
+        query = query.Where(p => p.Nombre.Contains(busqueda));
+    return await query.ToListAsync();
+});
 
 app.Run();
