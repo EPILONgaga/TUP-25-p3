@@ -60,11 +60,27 @@ app.MapPost("/carritos", () =>
     return Results.Ok(new { id });
 });
 
-app.MapGet("/carritos/{id}", (Guid id) =>
+app.MapGet("/carritos/{id}", async (Guid id, ContenidoTiendaDb db) =>
 {
     if (!carritos.ContainsKey(id))
         return Results.NotFound();
-    return Results.Ok(carritos[id]);
+    var carrito = carritos[id];
+    if (carrito.Count == 0)
+        return Results.Ok(new List<object>());
+
+    var productosIds = carrito.Keys.ToList();
+    var productos = await db.Productos.Where(p => productosIds.Contains(p.Id)).ToListAsync();
+
+    var detalle = productos.Select(p => new {
+        id = p.Id,
+        nombre = p.Nombre,
+        precio = p.Precio,
+        imagen = p.Imagen,
+        cantidad = carrito[p.Id],
+        subtotal = p.Precio * carrito[p.Id]
+    }).ToList();
+
+    return Results.Ok(detalle);
 });
 
 app.MapPut("/carritos/{id}/{producto}", async (Guid id, int producto, ContenidoTiendaDb db) =>
@@ -113,6 +129,14 @@ app.MapPut("/carritos/{id}/confirmar", async (Guid id, ContenidoTiendaDb db, Con
 {
     if (!carritos.ContainsKey(id))
         return Results.NotFound();
+
+    // Validación de datos del cliente
+    if (string.IsNullOrWhiteSpace(datos.NombreCliente) ||
+        string.IsNullOrWhiteSpace(datos.ApellidoCliente) ||
+        string.IsNullOrWhiteSpace(datos.EmailCliente))
+    {
+        return Results.BadRequest("Nombre, apellido y email del cliente son obligatorios");
+    }
 
     var carrito = carritos[id];
     if (carrito.Count == 0)
