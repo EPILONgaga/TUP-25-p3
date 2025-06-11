@@ -109,4 +109,47 @@ app.MapDelete("/carritos/{id}", (Guid id) =>
     return Results.Ok("Carrito eliminado");
 });
 
+app.MapPut("/carritos/{id}/confirmar", async (Guid id, ContenidoTiendaDb db, ConfirmacionDto datos) =>
+{
+    if (!carritos.ContainsKey(id))
+        return Results.NotFound();
+
+    var carrito = carritos[id];
+    if (carrito.Count == 0)
+        return Results.BadRequest("El carrito está vacío");
+
+    foreach (var item in carrito)
+    {
+        var prod = await db.Productos.FindAsync(item.Key);
+        if (prod == null || prod.Stock < item.Value)
+            return Results.BadRequest($"Sin stock suficiente para producto {item.Key}");
+    }
+    var compra = new Compra
+    {
+        Fecha = DateTime.Now,
+        NombreCliente = datos.NombreCliente,
+        ApellidoCliente = datos.ApellidoCliente,
+        EmailCliente = datos.EmailCliente,
+        Items = new List<ItemCompra>(),
+        Total = 0
+    };
+    foreach (var item in carrito)
+    {
+        var prod = await db.Productos.FindAsync(item.Key);
+        prod.Stock -= item.Value;
+        var itemCompra = new ItemCompra
+        {
+            ProductoId = prod.Id,
+            Cantidad = item.Value,
+            PrecioUnitario = (decimal)prod.Precio
+        };
+        compra.Items.Add(itemCompra);
+        compra.Total += itemCompra.PrecioUnitario * itemCompra.Cantidad;
+    }
+    db.Compras.Add(compra);
+    await db.SaveChangesAsync();
+    carritos.Remove(id);
+    return Results.Ok("Compra confirmada");
+});
+
 app.Run();
