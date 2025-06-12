@@ -40,7 +40,13 @@
                             <td><img src="@item.imagen" alt="@item.nombre" style="width:60px;height:60px;object-fit:cover;border-radius:8px;"></td>
                             <td><b>@item.nombre</b></td>
                             <td class="text-success fw-bold">$@item.precio</td>
-                            <td>@item.cantidad</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => CambiarCantidad(item.id, item.cantidad - 1)" disabled="@(item.cantidad <= 1)">-</button>
+                                    <span>@item.cantidad</span>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => CambiarCantidad(item.id, item.cantidad + 1)">+</button>
+                                </div>
+                            </td>
                             <td class="fw-bold">$@item.subtotal</td>
                             <td>
                                 <button class="btn btn-outline-danger btn-sm" title="Quitar del carrito" @onclick="() => QuitarProducto(item.id)">
@@ -156,6 +162,35 @@
         else
         {
             mensaje = "No se pudo confirmar la compra. Verifica los datos y el stock.";
+        }
+    }
+
+    private async Task CambiarCantidad(int productoId, int nuevaCantidad)
+    {
+        if (nuevaCantidad < 1) return;
+        var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
+        if (Guid.TryParse(idStr, out var carritoId) && carritoId != Guid.Empty)
+        {
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (items[i].id == productoId)
+                {
+                    int diff = nuevaCantidad - items[i].cantidad;
+                    if (diff > 0)
+                    {
+                        for (int j = 0; j < diff; j++)
+                            await ApiService.AgregarProductoAsync(carritoId, productoId);
+                    }
+                    else if (diff < 0)
+                    {
+                        for (int j = 0; j < -diff; j++)
+                            await ApiService.QuitarProductoAsync(carritoId, productoId);
+                    }
+                    break;
+                }
+            }
+            items = await ApiService.ObtenerCarritoAsync(carritoId);
+            StateHasChanged();
         }
     }
 }

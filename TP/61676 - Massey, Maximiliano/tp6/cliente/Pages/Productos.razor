@@ -1,8 +1,10 @@
 @page "/productos"
+@using System.Web
 @using cliente.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject ApiService ApiService
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 <div class="bg-tienda-orange tienda-content">
     <h2 class="text-center mb-4">🎮 Productos disponibles</h2>
@@ -62,35 +64,37 @@
     private string mensaje;
     private int? errorProductoId = null;
     private string errorProductoMsg = null;
+    [Parameter] public string? busqueda { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        try
+        await CargarProductos();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await CargarProductos();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
         {
-            cargando = true;
-            mensaje = null;
-            // Intentar recuperar carritoId de localStorage (si existe)
-            var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
-            if (!Guid.TryParse(idStr, out carritoId) || carritoId == Guid.Empty)
-            {
-                creandoCarrito = true;
-                carritoId = await ApiService.CrearCarritoAsync();
-                await JS.InvokeAsync<object>("localStorage.setItem", "carritoId", carritoId.ToString());
-                creandoCarrito = false;
-            }
-            productos = await ApiService.ObtenerProductosAsync();
-        }
-        catch (Exception ex)
-        {
-            error = ex.Message;
-        }
-        finally
-        {
-            cargando = false;
+            await JS.InvokeVoidAsync("setTimeout", "document.querySelector('input[type=search]').focus()", 100);
         }
     }
 
-    [Inject] IJSRuntime JS { get; set; }
+    private async Task CargarProductos()
+    {
+        cargando = true;
+        mensaje = null;
+        error = null;
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        busqueda = query["busqueda"];
+        productos = await ApiService.ObtenerProductosAsync(busqueda);
+        cargando = false;
+    }
 
     private async Task AgregarAlCarrito(int productoId)
     {

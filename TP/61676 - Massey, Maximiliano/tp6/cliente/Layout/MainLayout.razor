@@ -1,19 +1,31 @@
-﻿@inherits LayoutComponentBase
+﻿@using cliente.Services
+@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject ApiService ApiService
+@inject IJSRuntime JS
+
 <nav class="navbar navbar-expand-lg tienda-navbar fixed-top shadow">
     <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center gap-2" href="/">
             <img src="img/logo.png" alt="Logo" style="height: 56px; width: 56px; object-fit: contain; border-radius: 10px; box-shadow: 0 1px 4px #b36b00; background: #fff3e0;" />
         </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
+        <form class="d-flex ms-3 me-4" role="search" @onsubmit="BuscarProductos">
+            <input class="form-control me-2" type="search" placeholder="Buscar..." aria-label="Buscar" @bind="busqueda" style="min-width:180px;">
+            <button class="btn btn-outline-light" type="submit">🔍</button>
+        </form>
+        <div class="collapse navbar-collapse show" id="navbarNav">
+            <ul class="navbar-nav ms-auto d-flex flex-row gap-2">
                 <li class="nav-item">
                     <a class="nav-link" href="/productos">Productos</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/carrito">Carrito</a>
+                <li class="nav-item position-relative">
+                    <a class="nav-link" href="/carrito">
+                        <span class="me-1">🛒</span>Carrito
+                        @if (carritoCount > 0)
+                        {
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.9rem;">@carritoCount</span>
+                        }
+                    </a>
                 </li>
             </ul>
         </div>
@@ -22,3 +34,36 @@
 <div class="tienda-content">
     @Body
 </div>
+
+@code {
+    private string busqueda;
+    private int carritoCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ActualizarContadorCarrito();
+    }
+
+    public async Task ActualizarContadorCarrito()
+    {
+        var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
+        if (Guid.TryParse(idStr, out var carritoId) && carritoId != Guid.Empty)
+        {
+            var items = await ApiService.ObtenerCarritoAsync(carritoId);
+            carritoCount = items?.Sum(i => i.cantidad) ?? 0;
+        }
+        else
+        {
+            carritoCount = 0;
+        }
+        StateHasChanged();
+    }
+
+    private void BuscarProductos()
+    {
+        if (!string.IsNullOrWhiteSpace(busqueda))
+            Navigation.NavigateTo($"/productos?busqueda={Uri.EscapeDataString(busqueda)}");
+        else
+            Navigation.NavigateTo("/productos");
+    }
+}
