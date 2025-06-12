@@ -1,7 +1,9 @@
 ﻿@inherits LayoutComponentBase
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+<nav class="navbar navbar-expand-lg tienda-navbar fixed-top shadow">
     <div class="container-fluid">
-        <a class="navbar-brand" href="/">Tienda Online</a>
+        <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+            <img src="img/logo.png" alt="Logo" style="height: 56px; width: 56px; object-fit: contain; border-radius: 10px; box-shadow: 0 1px 4px #b36b00; background: #fff3e0;" />
+        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -17,6 +19,6 @@
         </div>
     </div>
 </nav>
-<div class="page">
+<div class="tienda-content">
     @Body
 </div>

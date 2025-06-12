@@ -1,48 +1,57 @@
 @page "/productos"
 @using cliente.Services
+@using Microsoft.AspNetCore.Components.Forms
 @inject ApiService ApiService
 @inject NavigationManager Navigation
 
-<PageTitle>Productos</PageTitle>
+<div class="bg-tienda-orange tienda-content">
+    <h2 class="text-center mb-4">🎮 Productos disponibles</h2>
 
-<h2>Productos disponibles</h2>
-
-@if (cargando)
-{
-    <div class="alert alert-info">Cargando productos...</div>
-}
-else if (error != null)
-{
-    <div class="alert alert-danger">Error: @error</div>
-}
-else if (productos != null && productos.Count > 0)
-{
-    <div class="row">
-        @foreach (var p in productos)
-        {
-            <div class="col-md-4 mb-4">
-                <div class="card h-100">
-                    <img src="@p.imagen" class="card-img-top" alt="@p.nombre" style="max-height:180px;object-fit:cover;">
-                    <div class="card-body">
-                        <h5 class="card-title">@p.nombre</h5>
-                        <p class="card-text">@p.descripcion</p>
-                        <p class="card-text"><b>Precio:</b> $@p.precio</p>
-                        <p class="card-text"><b>Stock:</b> @p.stock</p>
-                        <button class="btn btn-success" @onclick="() => AgregarAlCarrito(p.id)" disabled="@(p.stock < 1)">Agregar al carrito</button>
-                        @if (mensaje != null)
+    @if (mensaje != null)
+    {
+        <div class="alert alert-info text-center">@mensaje</div>
+    }
+    else if (cargando)
+    {
+        <div class="alert alert-info text-center">Cargando productos...</div>
+    }
+    else if (error != null)
+    {
+        <div class="alert alert-danger text-center">Error: @error</div>
+    }
+    else if (productos != null && productos.Count > 0)
+    {
+        <div class="row justify-content-center">
+            @foreach (var p in productos)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="producto-box p-3 h-100">
+                        <div class="product-card">
+                            <img src="@p.imagen" class="product-card-img" alt="@p.nombre">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-primary">@p.nombre</h5>
+                                <p class="product-card-desc">@p.descripcion</p>
+                                <p class="card-text mb-1"><b>Precio:</b> <span class="text-success">$@p.precio</span></p>
+                                <p class="card-text mb-2"><b>Stock:</b> <span class="text-dark">@p.stock</span></p>
+                                <button class="btn btn-success mt-auto w-100" @onclick="() => AgregarAlCarrito(p.id)" disabled="@(p.stock < 1)">
+                                    <span aria-hidden="true">🎯</span> Agregar al carrito
+                                </button>
+                            </div>
+                        </div>
+                        @if (errorProductoId == p.id && errorProductoMsg != null)
                         {
-                            <div class="alert alert-info mt-2">@mensaje</div>
+                            <div class="alert alert-danger mt-2">@errorProductoMsg</div>
                         }
                     </div>
                 </div>
-            </div>
-        }
-    </div>
-}
-else
-{
-    <div>No hay productos disponibles.</div>
-}
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning text-center">No hay productos disponibles.</div>
+    }
+</div>
 
 @code {
     private List<ProductoDto> productos;
@@ -51,6 +60,8 @@ else
     private Guid carritoId;
     private bool creandoCarrito = false;
     private string mensaje;
+    private int? errorProductoId = null;
+    private string errorProductoMsg = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -84,10 +95,18 @@ else
     private async Task AgregarAlCarrito(int productoId)
     {
         mensaje = null;
-        var ok = await ApiService.AgregarProductoAsync(carritoId, productoId);
+        errorProductoId = null;
+        errorProductoMsg = null;
+        var (ok, errorMsg) = await ApiService.AgregarProductoAsync(carritoId, productoId);
         if (ok)
+        {
             mensaje = "Producto agregado al carrito";
+            Navigation.NavigateTo("/carrito");
+        }
         else
-            mensaje = "No se pudo agregar el producto (sin stock o error)";
+        {
+            errorProductoId = productoId;
+            errorProductoMsg = $"No se pudo agregar el producto: {errorMsg}";
+        }
     }
 }

@@ -1,89 +1,100 @@
 @page "/carrito"
 @using cliente.Services
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
 @inject ApiService ApiService
 @inject IJSRuntime JS
 
 <PageTitle>Carrito</PageTitle>
 
-<h2>Carrito de compras</h2>
+<div class="bg-tienda-orange tienda-content">
+    <h2 class="text-center mb-4">🛒 Carrito de compras</h2>
 
-@if (cargando)
-{
-    <div class="alert alert-info">Cargando carrito...</div>
-}
-else if (error != null)
-{
-    <div class="alert alert-danger">Error: @error</div>
-}
-else if (items != null && items.Count > 0)
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Imagen</th>
-                <th>Producto</th>
-                <th>Precio</th>
-                <th>Cantidad</th>
-                <th>Subtotal</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in items)
-            {
-                <tr>
-                    <td><img src="@item.imagen" alt="@item.nombre" style="width:60px;height:60px;object-fit:cover;"></td>
-                    <td>@item.nombre</td>
-                    <td>$@item.precio</td>
-                    <td>@item.cantidad</td>
-                    <td>$@item.subtotal</td>
-                    <td>
-                        <button class="btn btn-danger btn-sm" @onclick="() => QuitarProducto(item.id)">Quitar</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    <div class="mb-3">
-        <b>Total: $@items.Sum(i => i.subtotal)</b>
-    </div>
-    <button class="btn btn-primary" @onclick="MostrarFormulario">Confirmar compra</button>
-}
-else
-{
-    <div>No hay productos en el carrito.</div>
-}
-
-@if (mostrarFormulario)
-{
-    <div class="card mt-4" style="max-width:400px;">
-        <div class="card-header">Confirmar compra</div>
-        <div class="card-body">
-            <EditForm Model="form" OnValidSubmit="ConfirmarCompra">
-                <DataAnnotationsValidator />
-                <ValidationSummary />
-                <div class="mb-2">
-                    <label>Nombre</label>
-                    <InputText class="form-control" @bind-Value="form.NombreCliente" />
-                </div>
-                <div class="mb-2">
-                    <label>Apellido</label>
-                    <InputText class="form-control" @bind-Value="form.ApellidoCliente" />
-                </div>
-                <div class="mb-2">
-                    <label>Email</label>
-                    <InputText class="form-control" @bind-Value="form.EmailCliente" />
-                </div>
-                <button class="btn btn-success" type="submit">Confirmar</button>
-                <button class="btn btn-secondary ms-2" type="button" @onclick="() => mostrarFormulario = false">Cancelar</button>
-            </EditForm>
-            @if (mensaje != null)
-            {
-                <div class="alert alert-info mt-2">@mensaje</div>
-            }
+    @if (cargando)
+    {
+        <div class="alert alert-info text-center">Cargando carrito...</div>
+    }
+    else if (error != null)
+    {
+        <div class="alert alert-danger text-center">Error: @error</div>
+    }
+    else if (items != null && items.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle shadow-sm rounded">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Imagen</th>
+                        <th>Producto</th>
+                        <th>Precio</th>
+                        <th>Cantidad</th>
+                        <th>Subtotal</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in items)
+                    {
+                        <tr>
+                            <td><img src="@item.imagen" alt="@item.nombre" style="width:60px;height:60px;object-fit:cover;border-radius:8px;"></td>
+                            <td><b>@item.nombre</b></td>
+                            <td class="text-success fw-bold">$@item.precio</td>
+                            <td>@item.cantidad</td>
+                            <td class="fw-bold">$@item.subtotal</td>
+                            <td>
+                                <button class="btn btn-outline-danger btn-sm" title="Quitar del carrito" @onclick="() => QuitarProducto(item.id)">
+                                    <span aria-hidden="true">🗑️</span> Quitar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
-    </div>
-}
+        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded shadow-sm">
+            <span class="fs-5 fw-bold">Total: $@items.Sum(i => i.subtotal)</span>
+            <button class="btn btn-primary btn-lg" @onclick="MostrarFormulario"><span aria-hidden="true">✅</span> Confirmar compra</button>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning text-center">No hay productos en el carrito.</div>
+    }
+
+    @if (mostrarFormulario)
+    {
+        <div class="card mt-4 mx-auto shadow" style="max-width:400px;">
+            <div class="card-header bg-primary text-white">Confirmar compra</div>
+            <div class="card-body">
+                <EditForm Model="form" OnValidSubmit="ConfirmarCompra">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="mb-2">
+                        <label>Nombre</label>
+                        <InputText class="form-control" @bind-Value="form.NombreCliente" />
+                    </div>
+                    <div class="mb-2">
+                        <label>Apellido</label>
+                        <InputText class="form-control" @bind-Value="form.ApellidoCliente" />
+                    </div>
+                    <div class="mb-2">
+                        <label>Email</label>
+                        <InputText class="form-control" @bind-Value="form.EmailCliente" />
+                    </div>
+                    <div class="d-flex justify-content-end">
+                        <button class="btn btn-success me-2" type="submit"><span aria-hidden="true">💾</span> Confirmar</button>
+                        <button class="btn btn-secondary" type="button" @onclick="() => mostrarFormulario = false">Cancelar</button>
+                    </div>
+                </EditForm>
+                @if (mensaje != null)
+                {
+                    <div class="alert alert-info mt-2 text-center">@mensaje</div>
+                }
+            </div>
+        </div>
+    }
+</div>
 
 @code {
     private List<ItemCarritoDto> items;

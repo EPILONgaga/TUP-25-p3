@@ -1,7 +1,9 @@
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
-
+body{
+    background-color: #ffd600;
+}
 h1:focus {
     outline: none;
 }
@@ -111,4 +113,138 @@ code {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+
+/* Fondo amarillo suave para páginas principales */
+.bg-tienda-yellow {
+    background-color: #fff9c4 !important;
+    min-height: 100vh;
+    padding-top: 2rem;
+}
+
+/* Fondo naranja para páginas principales */
+.bg-tienda-orange {
+    background-color: #ff9800 !important;
+    min-height: 100vh;
+    padding-top: 2rem;
+}
+
+/* Tarjeta de producto con espacio fijo para imagen y descripción */
+.product-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    border-radius: 8px;
+    border: none;
+}
+.product-card-img {
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px 8px 0 0;
+}
+.product-card-desc {
+    min-height: 70px;
+    max-height: 90px;
+    overflow-y: auto;
+    color: #555;
+}
+
+/* Título más grande para cada producto */
+.product-card-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.5px;
+}
+
+/* Colores personalizados para cada juego */
+.titulo-half-life { color: #fca311; }
+.titulo-blasphemous { color: #7c3f58; }
+.titulo-hollow { color: #3a86ff; }
+.titulo-celeste { color: #00b4d8; }
+.titulo-re4 { color: #b32121; }
+.titulo-darksouls { color: #6c584c; }
+.titulo-stardew { color: #43aa8b; }
+.titulo-witcher { color: #22223b; }
+.titulo-undertale { color: #222; }
+.titulo-cuphead { color: #ffe066; text-shadow: 1px 1px 2px #222; }
+
+/* Navbar fija arriba */
+.tienda-navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1030;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.tienda-content {
+    margin-top: 70px;
+}
+
+/* Caja visual para cada producto */
+.producto-box {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+    border: 2px solid #ffe066;
+    transition: box-shadow 0.2s;
+    margin-bottom: 1rem;
+}
+.producto-box:hover {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+    border-color: #ffd600;
+}
+
+/* Grid de productos en fila, responsivo */
+.row.justify-content-center {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+}
+.col-md-4 {
+    flex: 0 1 380px;
+    max-width: 400px;
+    min-width: 300px;
+    display: flex;
+}
+.producto-box {
+    min-height: 480px;
+    font-size: 1.08rem;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Navbar más estética */
+.tienda-navbar {
+    background: linear-gradient(90deg, #ff9800 0%, #ffb74d 100%) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+}
+.tienda-navbar .navbar-brand {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff !important;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 4px #b36b00;
+    transition: color 0.2s;
+}
+.tienda-navbar .navbar-brand:hover {
+    color: #ffe0b2 !important;
+}
+.tienda-navbar .nav-link {
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: #fff !important;
+    margin-right: 1.2rem;
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s;
+    padding: 0.5rem 1.2rem;
+}
+.tienda-navbar .nav-link.active, .tienda-navbar .nav-link:hover {
+    background: #fff3e0;
+    color: #ff9800 !important;
 }

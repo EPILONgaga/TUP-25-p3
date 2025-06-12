@@ -34,24 +34,32 @@ public class ApiService {
 
     public async Task<List<ItemCarritoDto>> ObtenerCarritoAsync(Guid id)
     {
-        return await _httpClient.GetFromJsonAsync<List<ItemCarritoDto>>($"/carritos/{id}") ?? new List<ItemCarritoDto>();
+        try
+        {
+            return await _httpClient.GetFromJsonAsync<List<ItemCarritoDto>>($"/carritos/{id}") ?? new List<ItemCarritoDto>();
+        }
+        catch (HttpRequestException ex)
+        {
+            if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return null;
+            throw;
+        }
     }
 
-    public async Task<bool> AgregarProductoAsync(Guid carritoId, int productoId)
+    public async Task<(bool ok, string errorMsg)> AgregarProductoAsync(Guid carritoId, int productoId)
     {
         var resp = await _httpClient.PutAsync($"/carritos/{carritoId}/{productoId}", null);
-        return resp.IsSuccessStatusCode;
+        if (!resp.IsSuccessStatusCode)
+        {
+            var errorMsg = await resp.Content.ReadAsStringAsync();
+            return (false, errorMsg);
+        }
+        return (true, null);
     }
 
     public async Task<bool> QuitarProductoAsync(Guid carritoId, int productoId)
     {
         var resp = await _httpClient.DeleteAsync($"/carritos/{carritoId}/{productoId}");
-        return resp.IsSuccessStatusCode;
-    }
-
-    public async Task<bool> EliminarCarritoAsync(Guid carritoId)
-    {
-        var resp = await _httpClient.DeleteAsync($"/carritos/{carritoId}");
         return resp.IsSuccessStatusCode;
     }
 
@@ -62,6 +70,11 @@ public class ApiService {
     }
 }
 
+public class DatosRespuesta {
+    public string Mensaje { get; set; }
+    public DateTime Fecha { get; set; }
+}
+
 public class ProductoDto {
     public int id { get; set; }
     public string nombre { get; set; }
@@ -70,6 +83,7 @@ public class ProductoDto {
     public int stock { get; set; }
     public string imagen { get; set; }
 }
+
 public class ItemCarritoDto {
     public int id { get; set; }
     public string nombre { get; set; }
@@ -78,13 +92,11 @@ public class ItemCarritoDto {
     public int cantidad { get; set; }
     public double subtotal { get; set; }
 }
+
 public class CrearCarritoRespuesta { public Guid id { get; set; } }
+
 public class ConfirmacionDto {
     public string NombreCliente { get; set; }
     public string ApellidoCliente { get; set; }
     public string EmailCliente { get; set; }
-}
-public class DatosRespuesta {
-    public string Mensaje { get; set; }
-    public DateTime Fecha { get; set; }
 }
