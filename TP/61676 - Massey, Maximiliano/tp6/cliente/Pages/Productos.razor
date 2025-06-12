@@ -5,6 +5,7 @@
 @inject ApiService ApiService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject HttpClient Http
 
 <div class="bg-tienda-orange tienda-content">
     <h2 class="text-center mb-4">🎮 Productos disponibles</h2>
@@ -68,6 +69,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var carritoIdStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
+        if (string.IsNullOrEmpty(carritoIdStr) || !Guid.TryParse(carritoIdStr, out carritoId) || carritoId == Guid.Empty)
+        {
+            // No hay carrito, crear uno nuevo
+            carritoId = await CrearNuevoCarrito();
+            await JS.InvokeVoidAsync("localStorage.setItem", "carritoId", carritoId.ToString());
+        }
+
         await CargarProductos();
     }
 
@@ -112,5 +121,15 @@
             errorProductoId = productoId;
             errorProductoMsg = $"No se pudo agregar el producto: {errorMsg}";
         }
+    }
+
+    private async Task<Guid> CrearNuevoCarrito()
+    {
+        var response = await Http.PostAsync("http://localhost:5184/carritos", null);
+        response.EnsureSuccessStatusCode();
+        var json = await response.Content.ReadAsStringAsync();
+        // El backend devuelve: { "id": "guid" }
+        var obj = System.Text.Json.JsonDocument.Parse(json);
+        return obj.RootElement.GetProperty("id").GetGuid();
     }
 }
