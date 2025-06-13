@@ -19,7 +19,7 @@ public class ApiService {
         }
     }
 
-    public async Task<List<ProductoDto>> ObtenerProductosAsync(string? busqueda = null)
+    public async Task<List<ProductoDto>> ObtenerProductosAsync(string busqueda = null)
     {
         var url = "/productos" + (string.IsNullOrWhiteSpace(busqueda) ? "" : $"?busqueda={Uri.EscapeDataString(busqueda)}");
         return await _httpClient.GetFromJsonAsync<List<ProductoDto>>(url) ?? new List<ProductoDto>();
@@ -44,23 +44,39 @@ public class ApiService {
                 return null;
             throw;
         }
-    }
-
-    public async Task<(bool ok, string errorMsg)> AgregarProductoAsync(Guid carritoId, int productoId)
+    }    public async Task<(bool ok, string errorMsg)> AgregarProductoAsync(Guid carritoId, int productoId)
     {
-        var resp = await _httpClient.PutAsync($"/carritos/{carritoId}/{productoId}", null);
-        if (!resp.IsSuccessStatusCode)
+        try
         {
-            var errorMsg = await resp.Content.ReadAsStringAsync();
-            return (false, errorMsg);
+            var resp = await _httpClient.PutAsync($"/carritos/{carritoId}/{productoId}", null);
+            if (!resp.IsSuccessStatusCode)
+            {
+                var errorMsg = await resp.Content.ReadAsStringAsync();
+                if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return (false, "El carrito no existe. Se creará uno nuevo automáticamente.");
+                }
+                return (false, errorMsg);
+            }
+            return (true, null);
         }
-        return (true, null);
+        catch (Exception ex)
+        {
+            return (false, $"Error de conexión: {ex.Message}");
+        }
     }
 
     public async Task<bool> QuitarProductoAsync(Guid carritoId, int productoId)
     {
-        var resp = await _httpClient.DeleteAsync($"/carritos/{carritoId}/{productoId}");
-        return resp.IsSuccessStatusCode;
+        try
+        {
+            var resp = await _httpClient.DeleteAsync($"/carritos/{carritoId}/{productoId}");
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     public async Task<bool> ConfirmarCompraAsync(Guid carritoId, ConfirmacionDto datos)

@@ -1,8 +1,11 @@
 ﻿@using cliente.Services
+@using Microsoft.JSInterop
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
 @inject ApiService ApiService
 @inject IJSRuntime JS
+@inject NotificationService NotificationService
+@implements IDisposable
 
 <nav class="navbar navbar-expand-lg tienda-navbar fixed-top shadow">
     <div class="container-fluid">
@@ -13,10 +16,11 @@
             <input class="form-control me-2" type="search" placeholder="Buscar..." aria-label="Buscar" @bind="busqueda" style="min-width:180px;">
             <button class="btn btn-outline-light" type="submit">🔍</button>
         </form>
-        <div class="collapse navbar-collapse show" id="navbarNav">
-            <ul class="navbar-nav ms-auto d-flex flex-row gap-2">
+        <div class="collapse navbar-collapse show" id="navbarNav">            <ul class="navbar-nav ms-auto d-flex flex-row gap-2">
                 <li class="nav-item">
-                    <a class="nav-link" href="/productos">Productos</a>
+                    <a class="nav-link" href="/productos">
+                        <span class="me-1">🎮</span>Productos
+                    </a>
                 </li>
                 <li class="nav-item position-relative">
                     <a class="nav-link" href="/carrito">
@@ -35,35 +39,108 @@
     @Body
 </div>
 
+<!-- Componente de notificaciones toast -->
+<cliente.Components.NotificationToast />
+
 @code {
     private string busqueda;
     private int carritoCount = 0;
+    private Timer timer;
+    private DotNetObjectReference<MainLayout>? objRef;
 
     protected override async Task OnInitializedAsync()
     {
         await ActualizarContadorCarrito();
+        
+        // Suscribirse a eventos del NotificationService
+        NotificationService.OnCartUpdated += async () =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await ActualizarContadorCarrito();
+                StateHasChanged();
+            });
+        };
+        
+        // Timer de respaldo para actualizar cada 10 segundos
+        timer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await ActualizarContadorCarrito();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Crear referencia para JavaScript
+            objRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("setMainLayoutReference", objRef);
+        }
+    }
+
+    [JSInvokable]
+    public async Task UpdateCartCounter()
+    {
+        await ActualizarContadorCarrito();
+        StateHasChanged();
     }
 
     public async Task ActualizarContadorCarrito()
     {
-        var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
-        if (Guid.TryParse(idStr, out var carritoId) && carritoId != Guid.Empty)
+        try
         {
-            var items = await ApiService.ObtenerCarritoAsync(carritoId);
-            carritoCount = items?.Sum(i => i.cantidad) ?? 0;
+            var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
+            if (Guid.TryParse(idStr, out var carritoId) && carritoId != Guid.Empty)
+            {
+                var items = await ApiService.ObtenerCarritoAsync(carritoId);
+                if (items == null)
+                {
+                    // El carrito no existe en el servidor, limpiar localStorage
+                    await JS.InvokeVoidAsync("localStorage.removeItem", "carritoId");
+                    carritoCount = 0;
+                }
+                else
+                {
+                    carritoCount = items.Sum(i => i.cantidad);
+                }
+            }
+            else
+            {
+                carritoCount = 0;
+            }
         }
-        else
+        catch (Exception)
         {
             carritoCount = 0;
+            // En caso de error, limpiar localStorage
+            await JS.InvokeVoidAsync("localStorage.removeItem", "carritoId");
         }
-        StateHasChanged();
     }
 
     private void BuscarProductos()
     {
         if (!string.IsNullOrWhiteSpace(busqueda))
-            Navigation.NavigateTo($"/productos?busqueda={Uri.EscapeDataString(busqueda)}");
+        {
+            var url = $"/productos?busqueda={Uri.EscapeDataString(busqueda)}";
+            Navigation.NavigateTo(url);
+        }
         else
+        {
             Navigation.NavigateTo("/productos");
+        }
+        // Limpiar el input después de buscar
+        busqueda = "";
+        StateHasChanged();
+    }
+    
+    public void Dispose()
+    {
+        objRef?.Dispose();
+        timer?.Dispose();
     }
 }

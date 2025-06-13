@@ -5,6 +5,8 @@
 @using System.ComponentModel.DataAnnotations
 @inject ApiService ApiService
 @inject IJSRuntime JS
+@inject NotificationService NotificationService
+@inject NavigationManager Navigation
 
 <PageTitle>Carrito</PageTitle>
 
@@ -18,10 +20,9 @@
     else if (error != null)
     {
         <div class="alert alert-danger text-center">Error: @error</div>
-    }
-    else if (items != null && items.Count > 0)
+    }    else if (items != null && items.Count > 0)
     {
-        <div class="table-responsive">
+        <div class="table-responsive fade-in">
             <table class="table table-hover align-middle shadow-sm rounded">
                 <thead class="table-dark">
                     <tr>
@@ -109,87 +110,139 @@
     private Guid carritoId;
     private bool mostrarFormulario = false;
     private ConfirmacionDto form = new();
-    private string mensaje;
-
-    protected override async Task OnInitializedAsync()
+    private string mensaje;    protected override async Task OnInitializedAsync()
     {
         try
         {
             cargando = true;
             mensaje = null;
-            var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
-            if (!Guid.TryParse(idStr, out carritoId) || carritoId == Guid.Empty)
+            var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");            if (!Guid.TryParse(idStr, out carritoId) || carritoId == Guid.Empty)
             {
                 error = "No hay carrito activo.";
+                // Eliminar notificación innecesaria - es evidente en la UI
                 return;
             }
             items = await ApiService.ObtenerCarritoAsync(carritoId);
+            
+            // Eliminar notificación de carrito vacío - es redundante con el mensaje en pantalla
         }
         catch (Exception ex)
         {
             error = ex.Message;
+            NotificationService.ShowError(
+                "No se pudo cargar el carrito. Verifica tu conexión.",
+                "Error al cargar carrito"
+            );
         }
         finally
         {
             cargando = false;
         }
-    }
-
-    private async Task QuitarProducto(int productoId)
+    }    private async Task QuitarProducto(int productoId)
     {
-        await ApiService.QuitarProductoAsync(carritoId, productoId);
-        items = await ApiService.ObtenerCarritoAsync(carritoId);
-        StateHasChanged();
-    }
-
-    private void MostrarFormulario()
-    {
-        mostrarFormulario = true;
-        mensaje = null;
-    }
-
-    private async Task ConfirmarCompra()
-    {
-        mensaje = null;
-        var ok = await ApiService.ConfirmarCompraAsync(carritoId, form);
-        if (ok)
+        var producto = items?.FirstOrDefault(i => i.id == productoId);
+        var nombreProducto = producto?.nombre ?? "Producto";
+        
+        var resultado = await ApiService.QuitarProductoAsync(carritoId, productoId);
+        if (resultado)
         {
-            mensaje = "¡Compra confirmada!";
-            await JS.InvokeAsync<object>("localStorage.removeItem", "carritoId");
-            items = new List<ItemCarritoDto>();
-            mostrarFormulario = false;
+            items = await ApiService.ObtenerCarritoAsync(carritoId);
+            NotificationService.ShowProductRemoved(nombreProducto);
         }
         else
         {
-            mensaje = "No se pudo confirmar la compra. Verifica los datos y el stock.";
+            NotificationService.ShowError(
+                "No se pudo remover el producto del carrito",
+                "Error al eliminar"
+            );
         }
-    }
-
-    private async Task CambiarCantidad(int productoId, int nuevaCantidad)
+        StateHasChanged();
+    }    private void MostrarFormulario()
+    {
+        if (items == null || items.Count == 0)
+        {
+            // El usuario ya ve que el carrito está vacío en la interfaz
+            return;
+        }
+        
+        mostrarFormulario = true;
+        mensaje = null;
+        
+        NotificationService.ShowInfo(
+            "Completa tus datos para finalizar la compra",
+            "Último paso",
+            3000
+        );
+    }private async Task ConfirmarCompra()
+    {
+        mensaje = null;
+        var ok = await ApiService.ConfirmarCompraAsync(carritoId, form);        if (ok)
+        {
+            var total = (decimal)(items?.Sum(i => i.subtotal) ?? 0);
+            var itemCount = items?.Sum(i => i.cantidad) ?? 0;
+            
+            NotificationService.ShowPurchaseCompleted(total, itemCount);
+            
+            await JS.InvokeAsync<object>("localStorage.removeItem", "carritoId");
+            items = new List<ItemCarritoDto>();
+            mostrarFormulario = false;
+            form = new ConfirmacionDto(); // Limpiar formulario
+            
+            // Redirigir a la página de productos después de 2 segundos
+            await Task.Delay(2000);
+            Navigation.NavigateTo("/productos");
+        }
+        else
+        {
+            NotificationService.ShowError(
+                "Verifica que todos los campos estén completos y que haya stock suficiente",
+                "No se pudo procesar la compra"
+            );
+        }
+    }private async Task CambiarCantidad(int productoId, int nuevaCantidad)
     {
         if (nuevaCantidad < 1) return;
+        
+        var producto = items?.FirstOrDefault(i => i.id == productoId);
+        if (producto == null) return;
+        
+        var cantidadAnterior = producto.cantidad;
         var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
+        
         if (Guid.TryParse(idStr, out var carritoId) && carritoId != Guid.Empty)
         {
-            for (int i = 0; i < items.Count; i++)
+            try
             {
-                if (items[i].id == productoId)
+                for (int i = 0; i < items.Count; i++)
                 {
-                    int diff = nuevaCantidad - items[i].cantidad;
-                    if (diff > 0)
+                    if (items[i].id == productoId)
                     {
-                        for (int j = 0; j < diff; j++)
-                            await ApiService.AgregarProductoAsync(carritoId, productoId);
+                        int diff = nuevaCantidad - items[i].cantidad;
+                        if (diff > 0)
+                        {
+                            for (int j = 0; j < diff; j++)
+                                await ApiService.AgregarProductoAsync(carritoId, productoId);
+                        }
+                        else if (diff < 0)
+                        {
+                            for (int j = 0; j < -diff; j++)
+                                await ApiService.QuitarProductoAsync(carritoId, productoId);
+                        }
+                        break;
                     }
-                    else if (diff < 0)
-                    {
-                        for (int j = 0; j < -diff; j++)
-                            await ApiService.QuitarProductoAsync(carritoId, productoId);
-                    }
-                    break;
                 }
+                  items = await ApiService.ObtenerCarritoAsync(carritoId);
+                
+                // No mostrar notificación de cantidad - el cambio es evidente en la UI
             }
-            items = await ApiService.ObtenerCarritoAsync(carritoId);
+            catch (Exception)
+            {
+                NotificationService.ShowError(
+                    "No se pudo actualizar la cantidad del producto",
+                    "Error al modificar cantidad"
+                );
+            }
+            
             StateHasChanged();
         }
     }

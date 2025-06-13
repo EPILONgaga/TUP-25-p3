@@ -6,15 +6,11 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject HttpClient Http
+@inject NotificationService NotificationService
 
 <div class="bg-tienda-orange tienda-content">
-    <h2 class="text-center mb-4">🎮 Productos disponibles</h2>
 
-    @if (mensaje != null)
-    {
-        <div class="alert alert-info text-center">@mensaje</div>
-    }
-    else if (cargando)
+    @if (cargando)
     {
         <div class="alert alert-info text-center">Cargando productos...</div>
     }
@@ -22,9 +18,8 @@
     {
         <div class="alert alert-danger text-center">Error: @error</div>
     }
-    else if (productos != null && productos.Count > 0)
-    {
-        <div class="row justify-content-center">
+    else if (productos != null && productos.Count > 0)    {
+        <div class="row justify-content-center fade-in">
             @foreach (var p in productos)
             {
                 <div class="col-md-4 mb-4">
@@ -61,11 +56,13 @@
     private string error;
     private bool cargando = true;
     private Guid carritoId;
-    private bool creandoCarrito = false;
-    private string mensaje;
-    private int? errorProductoId = null;
-    private string errorProductoMsg = null;
-    [Parameter] public string? busqueda { get; set; }
+    private int? errorProductoId;
+    private string errorProductoMsg;
+    private string busquedaActual; // Variable interna para tracking
+    
+    [Parameter] 
+    [SupplyParameterFromQuery(Name = "busqueda")]
+    public string busqueda { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,11 +75,11 @@
         }
 
         await CargarProductos();
-    }
-
-    protected override async Task OnParametersSetAsync()
+    }    protected override async Task OnParametersSetAsync()
     {
+        // Este método se ejecuta cada vez que cambian los parámetros de la URL
         await CargarProductos();
+        StateHasChanged(); // Forzar re-render
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -91,35 +88,98 @@
         {
             await JS.InvokeVoidAsync("setTimeout", "document.querySelector('input[type=search]').focus()", 100);
         }
-    }
-
-    private async Task CargarProductos()
+    }    private async Task CargarProductos()
     {
-        cargando = true;
-        mensaje = null;
-        error = null;
-        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
-        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
-        busqueda = query["busqueda"];
-        productos = await ApiService.ObtenerProductosAsync(busqueda);
-        cargando = false;
-    }
-
-    private async Task AgregarAlCarrito(int productoId)
+        try
+        {
+            cargando = true;
+            error = null;
+            
+            // Solo cargar si cambió la búsqueda o es la primera carga
+            if (busquedaActual != busqueda || productos == null)
+            {
+                busquedaActual = busqueda;
+                productos = await ApiService.ObtenerProductosAsync(busqueda);
+                  if (productos == null || productos.Count == 0)
+                {
+                    // Notificación de "sin resultados" eliminada - es evidente en la UI
+                }
+                // Notificación de resultados encontrados eliminada - el usuario ve la lista inmediatamente
+            }
+        }        catch (Exception ex)
+        {
+            error = ex.Message;
+            NotificationService.ShowConnectionError();
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }    private async Task AgregarAlCarrito(int productoId)
     {
-        mensaje = null;
         errorProductoId = null;
         errorProductoMsg = null;
-        var (ok, errorMsg) = await ApiService.AgregarProductoAsync(carritoId, productoId);
-        if (ok)
+        
+        var (ok, errorMsg) = await ApiService.AgregarProductoAsync(carritoId, productoId);        if (!ok && errorMsg.Contains("carrito no existe"))
         {
-            mensaje = "Producto agregado al carrito";
+            // El carrito no existe, crear uno nuevo silenciosamente
+            carritoId = await CrearNuevoCarrito();
+            await JS.InvokeVoidAsync("localStorage.setItem", "carritoId", carritoId.ToString());
+            
+            // Intentar agregar el producto nuevamente
+            var (ok2, errorMsg2) = await ApiService.AgregarProductoAsync(carritoId, productoId);            if (ok2)
+            {
+                var producto = productos?.FirstOrDefault(p => p.id == productoId);
+                var nombreProducto = producto?.nombre ?? "Producto";
+                
+                NotificationService.ShowProductAdded(nombreProducto);
+                
+                // Disparar evento de actualización del carrito
+                await JS.InvokeVoidAsync("tiendaHelpers.triggerCartUpdate");
+                
+                await Task.Delay(1000);
+                Navigation.NavigateTo("/carrito");
+            }
+            else
+            {
+                errorProductoId = productoId;
+                errorProductoMsg = $"No se pudo agregar el producto: {errorMsg2}";
+                NotificationService.ShowError(
+                    errorMsg2 ?? "Error desconocido", 
+                    "Error al agregar producto"
+                );
+            }
+        }        else if (ok)
+        {
+            var producto = productos?.FirstOrDefault(p => p.id == productoId);
+            var nombreProducto = producto?.nombre ?? "Producto";
+            
+            NotificationService.ShowProductAdded(nombreProducto);
+            
+            // Disparar evento de actualización del carrito
+            await JS.InvokeVoidAsync("tiendaHelpers.triggerCartUpdate");
+            
+            await Task.Delay(1000);
             Navigation.NavigateTo("/carrito");
         }
         else
         {
             errorProductoId = productoId;
             errorProductoMsg = $"No se pudo agregar el producto: {errorMsg}";
+            
+            var producto = productos?.FirstOrDefault(p => p.id == productoId);
+            var nombreProducto = producto?.nombre ?? "Producto";
+              if (errorMsg?.Contains("stock") == true)
+            {
+                NotificationService.ShowOutOfStock(nombreProducto);
+            }
+            else
+            {
+                NotificationService.ShowError(
+                    errorMsg ?? "Error desconocido", 
+                    "Error al agregar producto"
+                );
+            }
         }
     }
 
