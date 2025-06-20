@@ -257,7 +257,7 @@ code {
 
 /* Navbar más estética */
 .tienda-navbar {
-    background: linear-gradient(90deg, #ff9800 0%, #ffb74d 100%) !important;
+    background: linear-gradient(90deg, #dd3030 0%, #970000 100%) !important;
     box-shadow: 0 2px 12px rgba(0,0,0,0.10);
 }
 .tienda-navbar .navbar-brand {

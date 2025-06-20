@@ -30,8 +30,8 @@
                                 <h5 class="card-title text-primary">@p.nombre</h5>
                                 <p class="product-card-desc">@p.descripcion</p>
                                 <p class="card-text mb-1"><b>Precio:</b> <span class="text-success">$@p.precio</span></p>
-                                <p class="card-text mb-2"><b>Stock:</b> <span class="text-dark">@p.stock</span></p>
-                                <button class="btn btn-success mt-auto w-100" @onclick="() => AgregarAlCarrito(p.id)" disabled="@(p.stock < 1)">
+                                <p class="card-text mb-2"><b>Stock:</b> <span class="text-dark">@StockDisponible(p)</span></p>
+                                <button class="btn btn-success mt-auto w-100" @onclick="() => AgregarAlCarrito(p.id)" disabled="@(StockDisponible(p) < 1)">
                                     <span aria-hidden="true">🎯</span> Agregar al carrito
                                 </button>
                             </div>
@@ -53,13 +53,13 @@
 
 @code {
     private List<ProductoDto> productos;
+    private List<ItemCarritoDto> itemsCarrito; // Nuevo: para guardar los items del carrito
     private string error;
     private bool cargando = true;
     private Guid carritoId;
     private int? errorProductoId;
     private string errorProductoMsg;
     private string busquedaActual; // Variable interna para tracking
-    
     [Parameter] 
     [SupplyParameterFromQuery(Name = "busqueda")]
     public string busqueda { get; set; }
@@ -73,15 +73,15 @@
             carritoId = await CrearNuevoCarrito();
             await JS.InvokeVoidAsync("localStorage.setItem", "carritoId", carritoId.ToString());
         }
-
         await CargarProductos();
-    }    protected override async Task OnParametersSetAsync()
-    {
-        // Este método se ejecuta cada vez que cambian los parámetros de la URL
-        await CargarProductos();
-        StateHasChanged(); // Forzar re-render
+        await CargarCarrito(); // Cargar el carrito al iniciar
     }
-
+    protected override async Task OnParametersSetAsync()
+    {
+        await CargarProductos();
+        await CargarCarrito(); // Actualizar el carrito si cambia la búsqueda
+        StateHasChanged();
+    }
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -100,11 +100,6 @@
             {
                 busquedaActual = busqueda;
                 productos = await ApiService.ObtenerProductosAsync(busqueda);
-                  if (productos == null || productos.Count == 0)
-                {
-                    // Notificación de "sin resultados" eliminada - es evidente en la UI
-                }
-                // Notificación de resultados encontrados eliminada - el usuario ve la lista inmediatamente
             }
         }        catch (Exception ex)
         {
@@ -115,6 +110,13 @@
         {
             cargando = false;
         }
+    }    private async Task CargarCarrito()
+    {
+        itemsCarrito = await ApiService.ObtenerCarritoAsync(carritoId) ?? new List<ItemCarritoDto>();
+    }    private int StockDisponible(ProductoDto producto)
+    {
+        var enCarrito = itemsCarrito?.FirstOrDefault(i => i.id == producto.id)?.cantidad ?? 0;
+        return producto.stock - enCarrito;
     }    private async Task AgregarAlCarrito(int productoId)
     {
         errorProductoId = null;
@@ -129,6 +131,7 @@
             // Intentar agregar el producto nuevamente
             var (ok2, errorMsg2) = await ApiService.AgregarProductoAsync(carritoId, productoId);            if (ok2)
             {
+                await CargarCarrito(); // Actualizar el carrito
                 var producto = productos?.FirstOrDefault(p => p.id == productoId);
                 var nombreProducto = producto?.nombre ?? "Producto";
                 
@@ -151,6 +154,7 @@
             }
         }        else if (ok)
         {
+            await CargarCarrito(); // Actualizar el carrito
             var producto = productos?.FirstOrDefault(p => p.id == productoId);
             var nombreProducto = producto?.nombre ?? "Producto";
             

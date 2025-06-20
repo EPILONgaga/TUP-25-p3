@@ -37,6 +37,9 @@
                 <tbody>
                     @foreach (var item in items)
                     {
+                        var productoStock = 0;
+                        var prod = productos?.FirstOrDefault(p => p.id == item.id);
+                        if (prod != null) productoStock = prod.stock;
                         <tr>
                             <td><img src="@item.imagen" alt="@item.nombre" style="width:60px;height:60px;object-fit:cover;border-radius:8px;"></td>
                             <td><b>@item.nombre</b></td>
@@ -45,12 +48,12 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <button class="btn btn-outline-secondary btn-sm" @onclick="() => CambiarCantidad(item.id, item.cantidad - 1)" disabled="@(item.cantidad <= 1)">-</button>
                                     <span>@item.cantidad</span>
-                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => CambiarCantidad(item.id, item.cantidad + 1)">+</button>
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick="() => CambiarCantidad(item.id, item.cantidad + 1)" disabled="@(item.cantidad >= productoStock)">+</button>
                                 </div>
                             </td>
                             <td class="fw-bold">$@item.subtotal</td>
                             <td>
-                                <button class="btn btn-outline-danger btn-sm" title="Quitar del carrito" @onclick="() => QuitarProducto(item.id)">
+                                <button class="btn btn-outline-danger btn-sm" title="Quitar del carrito" @onclick="() => QuitarTodoProducto(item.id)">
                                     <span aria-hidden="true">🗑️</span> Quitar
                                 </button>
                             </td>
@@ -105,26 +108,27 @@
 
 @code {
     private List<ItemCarritoDto> items;
+    private List<ProductoDto> productos; // Guardar productos para stock
     private string error;
     private bool cargando = true;
     private Guid carritoId;
     private bool mostrarFormulario = false;
     private ConfirmacionDto form = new();
-    private string mensaje;    protected override async Task OnInitializedAsync()
+    private string mensaje;
+    protected override async Task OnInitializedAsync()
     {
         try
         {
             cargando = true;
             mensaje = null;
-            var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");            if (!Guid.TryParse(idStr, out carritoId) || carritoId == Guid.Empty)
+            var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
+            if (!Guid.TryParse(idStr, out carritoId) || carritoId == Guid.Empty)
             {
                 error = "No hay carrito activo.";
-                // Eliminar notificación innecesaria - es evidente en la UI
                 return;
             }
             items = await ApiService.ObtenerCarritoAsync(carritoId);
-            
-            // Eliminar notificación de carrito vacío - es redundante con el mensaje en pantalla
+            productos = await ApiService.ObtenerProductosAsync(); // Obtener todos los productos una vez
         }
         catch (Exception ex)
         {
@@ -243,6 +247,34 @@
                 );
             }
             
+            StateHasChanged();
+        }
+    }    private async Task QuitarTodoProducto(int productoId)
+    {
+        var producto = items?.FirstOrDefault(i => i.id == productoId);
+        var nombreProducto = producto?.nombre ?? "Producto";
+        var idStr = await JS.InvokeAsync<string>("localStorage.getItem", "carritoId");
+        if (Guid.TryParse(idStr, out var carritoId) && carritoId != Guid.Empty)
+        {
+            bool exito = true;
+            // Eliminar todas las unidades del producto
+            while (items.FirstOrDefault(i => i.id == productoId) != null)
+            {
+                exito = await ApiService.QuitarProductoAsync(carritoId, productoId);
+                if (!exito) break;
+                items = await ApiService.ObtenerCarritoAsync(carritoId);
+            }
+            if (exito)
+            {
+                NotificationService.ShowProductRemoved(nombreProducto);
+            }
+            else
+            {
+                NotificationService.ShowError(
+                    "No se pudo remover el producto del carrito",
+                    "Error al eliminar"
+                );
+            }
             StateHasChanged();
         }
     }

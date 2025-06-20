@@ -10,3 +10,15 @@
         </LayoutView>
     </NotFound>
 </Router>
+
+@code {
+    [Microsoft.AspNetCore.Components.RouteAttribute("/")]
+    public partial class RedirectToProductos : Microsoft.AspNetCore.Components.ComponentBase
+    {
+        [Inject] NavigationManager Navigation { get; set; }
+        protected override void OnInitialized()
+        {
+            Navigation.NavigateTo("/productos", true);
+        }
+    }
+}
