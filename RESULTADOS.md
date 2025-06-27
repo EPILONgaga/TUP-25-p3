@@ -8,7 +8,7 @@
 61032 Moya, Mariano                  24   ✅✅🟢✅✅🟢
 61037 Paz, Rodrigo Federico          30   ✅✅🟢✅✅🟢
 61059 Palavecino, Fabricio Gaston    27   ✅✅🟢✅✅🟢
-61096 Suarez Vece, Leandro Andres    31   ✅✅🟢✅✅🟢
+61096 Suarez Vece, Leandro Andres    31   ✅✅🟢✅✅🟢 :)
 61113 Oriz Caballero, Juan José      31   ✅✅🟢✅✅🟢
 61129 Tello, Abril María Agostina    33   ✅✅🟢✅✅🟢
 61197 Romano, Alfredo Nicolás        33   ✅✅🟢✅✅🟢
@@ -46,19 +46,18 @@
 ## Alumnos que deben completar practicos
 ```
 61579 Marti, Gonzalo                 27   ✅✅🟢✅❓🟢 xx
-61956 Leglisé, Laureano              28   ✅✅🟢✅❓🟢 ver
-61596 Zamora, Gonzalo Alejandro      30   ✅✅🟢❓❓🟢
-62172 Salcedo, Mariana Aylen         31     
+61956 Leglisé, Laureano              28   ✅✅🟢✅❓🟢
 ```
 
 ## Alumnos que no presentaron
 ```
 61118 Barrios, Santiago Alexis       28   ✅✅🟢❓❓❓
 61203 Acevedo Costello, Juan Ignacio 31   ✅✅🟢✅❓❓
-61248 Palma Collado, Nahuel          34   ✅✅🟢✅✅❓ ver
-61319 Carabajal, José Gabriel        30   ✅✅🟢✅❓❓ ver
+61248 Palma Collado, Nahuel          34   ✅✅🟢✅✅❓
+61319 Carabajal, José Gabriel        30   ✅✅🟢✅❓❓
 61562 Helguera, Agustina Elizabeth   30   ✅✅🟢✅❓❓
 61595 González Patti, Valentín       29   ✅✅🟢✅❓❓
+61596 Zamora, Gonzalo Alejandro      30   ✅✅🟢❓❓❓
 61862 Zerda, Thomas                  29   ✅✅🟢✅✅❓
 ```
 
@@ -122,7 +121,7 @@
 ## Alumnos que no presentaron
 ```
 61052 Reynoso, Braian Nicolás        34   ✅✅🟢✅✅❓
-61252 Aguirre Rojas, Lourdes Valenti 24   ✅✅🟢❓❓❓ver
+61252 Aguirre Rojas, Lourdes Valenti 24   ✅✅🟢❓❓❓
 61914 Robles, Leandro Gonzalo        17   ✅✅🟢✅✅❓
 ```
 

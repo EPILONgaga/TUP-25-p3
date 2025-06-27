@@ -7,6 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TP4App
 {
+    // === MODELOS ===
     public class Pregunta
     {
         public int Id { get; set; }
@@ -44,6 +45,7 @@ namespace TP4App
         public bool EsCorrecta { get; set; }
     }
 
+    // === DB CONTEXT ===
     public class ExamenDbContext : DbContext
     {
         public DbSet<Pregunta> Preguntas { get; set; }
@@ -56,6 +58,7 @@ namespace TP4App
         }
     }
 
+    // === PROGRAMA PRINCIPAL ===
     class Program
     {
         static void Main()
@@ -214,6 +217,6 @@ namespace TP4App
                 Console.WriteLine($"Respondida: {total} veces");
                 Console.WriteLine($"Correctas: {porcentaje:0.0}%");
             }
-        }
+        }
     }
 }
