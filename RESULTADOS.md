@@ -46,7 +46,7 @@
 ## Alumnos que deben completar practicos
 ```
 61579 Marti, Gonzalo                 27   ✅✅🟢✅❓🟢 xx
-61956 Leglisé, Laureano              28   ✅✅🟢✅❓🟢
+61956 Leglisé, Laureano              28   ✅✅🟢✅❓🟢 ver
 61596 Zamora, Gonzalo Alejandro      30   ✅✅🟢❓❓🟢
 62172 Salcedo, Mariana Aylen         31     
 ```
@@ -55,8 +55,8 @@
 ```
 61118 Barrios, Santiago Alexis       28   ✅✅🟢❓❓❓
 61203 Acevedo Costello, Juan Ignacio 31   ✅✅🟢✅❓❓
-61248 Palma Collado, Nahuel          34   ✅✅🟢✅✅❓
-61319 Carabajal, José Gabriel        30   ✅✅🟢✅❓❓
+61248 Palma Collado, Nahuel          34   ✅✅🟢✅✅❓ ver
+61319 Carabajal, José Gabriel        30   ✅✅🟢✅❓❓ ver
 61562 Helguera, Agustina Elizabeth   30   ✅✅🟢✅❓❓
 61595 González Patti, Valentín       29   ✅✅🟢✅❓❓
 61862 Zerda, Thomas                  29   ✅✅🟢✅✅❓
@@ -122,7 +122,7 @@
 ## Alumnos que no presentaron
 ```
 61052 Reynoso, Braian Nicolás        34   ✅✅🟢✅✅❓
-61252 Aguirre Rojas, Lourdes Valenti 24   ✅✅🟢❓❓❓
+61252 Aguirre Rojas, Lourdes Valenti 24   ✅✅🟢❓❓❓ver
 61914 Robles, Leandro Gonzalo        17   ✅✅🟢✅✅❓
 ```
 
