@@ -1,32 +1,119 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora React</title>
-
-    <style>
-        /* Poner aca el CSS */
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora</title>
+  <style>
+    body {
+      background-color: #f5f5f5;
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .calculadora {
+      background: #222;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .pantalla {
+      background: #000;
+      color: #0f0;
+      font-size: 2em;
+      text-align: right;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    .botones {
+      display: grid;
+      grid-template-columns: repeat(4, 60px);
+      gap: 10px;
+    }
+    button {
+      font-size: 1.2em;
+      padding: 15px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .operador {
+      background-color: #ff9500;
+      color: white;
+    }
+    .numero {
+      background-color: #333;
+      color: white;
+    }
+    .igual {
+      background-color: #28a745;
+      grid-column: span 2;
+      color: white;
+    }
+    .limpiar {
+      background-color: #dc3545;
+      color: white;
+    }
+  </style>
 </head>
 <body>
-    <div id="root"></div>
-<!-- React y ReactDOM desde CDN -->
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<!-- Babel para JSX en el navegador -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <div class="calculadora">
+    <div id="pantalla" class="pantalla">0</div>
+    <div class="botones">
+      <button class="limpiar" onclick="limpiar()">C</button>
+      <button class="operador" onclick="agregar('/')">/</button>
+      <button class="operador" onclick="agregar('*')">*</button>
+      <button class="operador" onclick="agregar('-')">-</button>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
+      <button class="numero" onclick="agregar('7')">7</button>
+      <button class="numero" onclick="agregar('8')">8</button>
+      <button class="numero" onclick="agregar('9')">9</button>
+      <button class="operador" onclick="agregar('+')">+</button>
 
-        function Calculadora(){
-            // Poner aca el JavaScript
-            return <h1><center>1+2=?</center></h1>;
-        }
+      <button class="numero" onclick="agregar('4')">4</button>
+      <button class="numero" onclick="agregar('5')">5</button>
+      <button class="numero" onclick="agregar('6')">6</button>
+      <button class="igual" onclick="calcular()">=</button>
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<Calculadora />);
-    </script>
+      <button class="numero" onclick="agregar('1')">1</button>
+      <button class="numero" onclick="agregar('2')">2</button>
+      <button class="numero" onclick="agregar('3')">3</button>
+      <button class="numero" onclick="agregar('0')" style="grid-column: span 2;">0</button>
+      <button class="numero" onclick="agregar('.')">.</button>
+    </div>
+  </div>
+
+  <script>
+    let pantalla = document.getElementById('pantalla');
+    let operacion = '';
+
+    function agregar(valor) {
+      if (pantalla.innerText === '0' && valor !== '.') {
+        pantalla.innerText = valor;
+      } else {
+        pantalla.innerText += valor;
+      }
+      operacion += valor;
+    }
+
+    function limpiar() {
+      pantalla.innerText = '0';
+      operacion = '';
+    }
+
+    function calcular() {
+      try {
+        let resultado = eval(operacion);
+        pantalla.innerText = resultado;
+        operacion = resultado.toString();
+      } catch {
+        pantalla.innerText = 'Error';
+        operacion = '';
+      }
+    }
+  </script>
 </body>
 </html>
