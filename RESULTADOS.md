@@ -47,6 +47,8 @@
 ```
 61579 Marti, Gonzalo                 27   ✅✅🟢✅❓🟢 xx
 61956 Leglisé, Laureano              28   ✅✅🟢✅❓🟢
+61596 Zamora, Gonzalo Alejandro      30   ✅✅🟢❓❓🟢
+62172 Salcedo, Mariana Aylen         31     
 ```
 
 ## Alumnos que no presentaron
@@ -57,7 +59,6 @@
 61319 Carabajal, José Gabriel        30   ✅✅🟢✅❓❓
 61562 Helguera, Agustina Elizabeth   30   ✅✅🟢✅❓❓
 61595 González Patti, Valentín       29   ✅✅🟢✅❓❓
-61596 Zamora, Gonzalo Alejandro      30   ✅✅🟢❓❓❓
 61862 Zerda, Thomas                  29   ✅✅🟢✅✅❓
 ```
 

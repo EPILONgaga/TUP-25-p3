@@ -1,0 +1,37 @@
+@page "/gracias"
+@inject NavigationManager Nav
+
+<div class="container my-5">
+    <div class="card shadow-lg border-0 mx-auto" style="max-width: 500px;">
+        <div class="card-body text-center py-5">
+            <svg width="60" height="60" fill="none" viewBox="0 0 24 24" class="mb-3">
+                <circle cx="12" cy="12" r="12" fill="#e6ffe6"/>
+                <path d="M7 13l3 3 7-7" stroke="#28a745" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h1 class="text-success fw-bold mb-3">¡Gracias por tu compra, @nombre!</h1>
+            <p class="fs-5">Te hemos enviado un comprobante a:<br><b>@email</b></p>
+            <p class="fs-5">Monto total de la compra:<br><b class="text-primary">$@total</b></p>
+            <button class="btn btn-lg btn-primary mt-4 px-5" @onclick="VolverAlInicio">Volver al inicio</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    public string nombre { get; set; } = "";
+    public string email { get; set; } = "";
+    public decimal total { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        nombre = query["nombre"] ?? "";
+        email = query["email"] ?? "";
+        total = decimal.TryParse(query["total"], out var t) ? t : 0;
+
+        if (string.IsNullOrWhiteSpace(nombre) || string.IsNullOrWhiteSpace(email))
+            Nav.NavigateTo("/");
+    }
+
+    void VolverAlInicio() => Nav.NavigateTo("/");
+}

@@ -109,7 +109,7 @@ public class Corredor {
                     return $"error: {errorCompleto}";
                 }
 
-                return "ok";
+                return $"ok en: {puertoBloqueado}";
             } catch (Exception ex) {
                 if (intento == 2) {
                     return $"error: {ex.Message}";

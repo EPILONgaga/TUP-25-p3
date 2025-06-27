@@ -1,0 +1,16 @@
+﻿@using Client.Components
+<nav class="navbar navbar-dark topbar">
+    <div class="container-fluid d-flex align-items-center justify-content-between">
+        <div></div>
+        <div class="ms-auto d-flex align-items-center">
+            <NavLink href="/carrito" class="me-3">
+                <CarritoIcon Cantidad="@CarritoService.Items.Sum(x => x.Cantidad)" />
+            </NavLink>
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">Catálogo</NavLink>
+            <NavLink class="nav-link" href="carrito">Carrito</NavLink>
+        </div>
+    </div>
+</nav>
+@code {
+    [Inject] CarritoService CarritoService { get; set; } = default!;
+}

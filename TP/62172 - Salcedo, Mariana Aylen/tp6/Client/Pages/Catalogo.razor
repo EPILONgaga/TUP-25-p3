@@ -1,0 +1,42 @@
+﻿@page "/"
+@using Shared.Models
+@using Client.Components
+
+<div class="container my-4">
+    <div class="d-flex align-items-center mb-4 justify-content-between">
+        <h1 class="mb-0 text-primary fw-bold" style="letter-spacing:1px;">Catálogo</h1>
+        <NavLink href="/carrito" class="ms-3">
+            <CarritoIcon Cantidad="@Carrito.Items.Sum(x => x.Cantidad)" />
+        </NavLink>
+    </div>
+    <input class="form-control mb-4 shadow-sm" placeholder="Buscar productos..." @bind="search" />
+    <div class="row g-4">
+        @foreach (var p in productos.Where(x => string.IsNullOrWhiteSpace(search) || x.Nombre.Contains(search, StringComparison.OrdinalIgnoreCase)))
+        {
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-flex">
+                <ProductoCard Producto="@p" OnAgregar="@(() => AgregarAlCarrito(p))" />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    List<ProductoDto> productos = new();
+    string search = "";
+
+    [Inject] HttpClient Http { get; set; } = default!;
+    [Inject] NavigationManager Nav { get; set; } = default!;
+    [Inject] CarritoService Carrito { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+        => productos = await Http.GetFromJsonAsync<List<ProductoDto>>("/api/productos") ?? new();
+    
+    void AgregarAlCarrito(ProductoDto prod)
+    {
+        if (prod.Stock > 0)
+        {
+            prod.Stock--;
+            Carrito.Agregar(prod);
+        }
+    }
+}

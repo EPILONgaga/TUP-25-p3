@@ -1,0 +1,35 @@
+@using Shared.Models
+
+<div class="card m-2" style="width: 18rem;">
+    <img src="@Producto.ImagenUrl" class="card-img-top" alt="@Producto.Nombre" style="height: 200px; object-fit: contain;" />
+    <div class="card-body">
+        <h5 class="card-title">@Producto.Nombre</h5>
+        <p class="card-text">@Producto.Descripcion</p>
+        <p>Existencias: @Producto.Stock</p>
+        <p><b>$@Producto.Precio</b></p>
+        <button class="btn btn-primary" @onclick="Agregar" disabled="@(!PuedeAgregar)">Agregar al carrito</button>
+        @if (mostrarSinStock)
+        {
+            <div class="alert alert-danger mt-2 p-2">No hay stock disponible</div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public ProductoDto Producto { get; set; } = new ProductoDto();
+    [Parameter] public EventCallback<ProductoDto> OnAgregar { get; set; }
+    bool PuedeAgregar => Producto.Stock > 0;
+    bool mostrarSinStock = false;
+    void Agregar()
+    {
+        if (Producto.Stock > 0)
+        {
+            mostrarSinStock = false;
+            OnAgregar.InvokeAsync(Producto);
+        }
+        else
+        {
+            mostrarSinStock = true;
+        }
+    }
+}

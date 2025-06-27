@@ -1,0 +1,9 @@
+<InputText @bind-Value="Value" @bind-Value:event="oninput" placeholder="Buscar..." class="form-control" />
+
+@code {
+    [Parameter]
+    public string Value { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+}

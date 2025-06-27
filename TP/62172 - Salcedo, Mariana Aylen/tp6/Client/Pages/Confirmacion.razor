@@ -1,0 +1,78 @@
+@page "/confirmacion"
+@using Shared.Models
+@using System.ComponentModel.DataAnnotations
+@inject CarritoService CarritoService
+@inject NavigationManager Nav
+@inject HttpClient Http
+
+<h1>Confirmación de compra</h1>
+
+@if (CarritoService.Items.Count == 0)
+{
+    <p>No hay productos en el carrito.</p>
+}
+else
+{
+    <h3>Resumen</h3>
+    <ul>
+        <li><b>Total ítems:</b> @CarritoService.Items.Sum(x => x.Cantidad)</li>
+        <li><b>Total importe:</b> $@CarritoService.Total()</li>
+    </ul>
+    <EditForm Model="@cliente" OnValidSubmit="ConfirmarCompra">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div>
+            <label>Nombre:</label>
+            <InputText @bind-Value="cliente.Nombre" class="form-control" />
+        </div>
+        <div>
+            <label>Apellido:</label>
+            <InputText @bind-Value="cliente.Apellido" class="form-control" />
+        </div>
+        <div>
+            <label>Email:</label>
+            <InputText @bind-Value="cliente.Email" class="form-control" />
+        </div>
+        <button class="btn btn-primary mt-2" type="submit">Confirmar</button>
+    </EditForm>
+    @if (!string.IsNullOrEmpty(error))
+    {
+        <div class="alert alert-danger mt-2">@error</div>
+    }
+}
+
+@code {
+    ClienteDto cliente = new();
+    string error = "";
+
+    async Task ConfirmarCompra()
+    {
+        var nombre = cliente.Nombre;
+        var email = cliente.Email;
+        var total = CarritoService.Total();
+
+        // Llama al backend para descontar stock
+        var response = await Http.PostAsJsonAsync("/api/carrito", CarritoService.Items);
+
+        if (response.IsSuccessStatusCode)
+        {
+            CarritoService.Items.Clear();
+            Nav.NavigateTo($"/gracias?nombre={Uri.EscapeDataString(nombre)}&email={Uri.EscapeDataString(email)}&total={total}");
+        }
+        else
+        {
+            error = "No hay stock suficiente para completar la compra.";
+        }
+    }
+
+    public class ClienteDto
+    {
+        [Required]
+        public string Nombre { get; set; } = "";
+        [Required]
+        public string Apellido { get; set; } = "";
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+    }
+}

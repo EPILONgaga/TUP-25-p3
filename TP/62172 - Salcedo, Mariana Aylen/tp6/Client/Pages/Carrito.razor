@@ -1,0 +1,84 @@
+﻿@page "/carrito"
+@using Shared.Models
+@inject CarritoService CarritoService
+@inject NavigationManager Nav
+
+<div class="container my-4">
+    <h1 class="mb-4 text-center text-primary fw-bold" style="letter-spacing:1px;">Carrito</h1>
+    @if (CarritoService.Items.Count == 0)
+    {
+        <div class="alert alert-info text-center">El carrito está vacío.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle shadow-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>Producto</th>
+                        <th class="text-center">Unidades</th>
+                        <th>Precio por unidad</th>
+                        <th>Importe</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in CarritoService.Items)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@item.Nombre</td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center align-items-center gap-2">
+                                    <button class="btn btn-outline-secondary btn-sm px-2 py-0" @onclick="() => CambiarCantidad(item, -1)" disabled="@(item.Cantidad == 1)">-</button>
+                                    <span class="mx-2 fs-5">@item.Cantidad</span>
+                                    <button class="btn btn-outline-secondary btn-sm px-2 py-0" @onclick="() => CambiarCantidad(item, 1)" disabled="@(ObtenerStockDisponible(item.ProductoId) <= 0)">+</button>
+                                </div>
+                            </td>
+                            <td class="text-end">$@item.PrecioUnitario</td>
+                            <td class="text-end">$@(item.PrecioUnitario * item.Cantidad)</td>
+                            <td><button class="btn btn-danger btn-sm" @onclick="() => Quitar(item)">Quitar</button></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+                <button class="btn btn-warning me-2" @onclick="Vaciar">Vaciar Carrito</button>
+                <button class="btn btn-success" @onclick="IrAConfirmacion">Confirmar compra</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Inject] HttpClient Http { get; set; } = default!;
+    List<ProductoDto> productos = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        productos = await Http.GetFromJsonAsync<List<ProductoDto>>("/api/productos") ?? new();
+    }
+
+    void CambiarCantidad(CarritoItemDto item, int delta)
+    {
+        var stockDisponible = ObtenerStockDisponible(item.ProductoId);
+        if (delta > 0 && stockDisponible <= 0)
+            return;
+        item.Cantidad += delta;
+        if (item.Cantidad < 1) item.Cantidad = 1;
+        StateHasChanged();
+        // Forzar recálculo del total
+        Nav.NavigateTo(Nav.Uri, forceLoad: false);
+    }
+    int ObtenerStockDisponible(int productoId)
+    {
+        var producto = productos.FirstOrDefault(x => x.Id == productoId);
+        if (producto == null) return 0;
+        var enCarrito = CarritoService.Items.FirstOrDefault(x => x.ProductoId == productoId)?.Cantidad ?? 0;
+        return producto.Stock - enCarrito;
+    }
+    void Quitar(CarritoItemDto item) => CarritoService.Items.Remove(item);
+    void Vaciar() => CarritoService.Items.Clear();
+    void IrAConfirmacion() => Nav.NavigateTo("/confirmacion");
+}
