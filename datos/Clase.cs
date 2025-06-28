@@ -210,6 +210,7 @@ class Clase : IEnumerable<Alumno>
             4 => "Program.cs",
             5 => "Servidor.cs",
             6 => "servidor/Program.cs",
+            7 => "calculadora.html",
             _ => "ejercicio.cs"
         };
 

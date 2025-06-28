@@ -52,7 +52,7 @@
 ## Alumnos que no presentaron
 ```
 61118 Barrios, Santiago Alexis       28   ✅✅🟢❓❓❓
-61203 Acevedo Costello, Juan Ignacio 31   ✅✅🟢✅❓❓
+61203 Acevedo Costello, Juan Ignacio 31   ✅✅🟢✅✅❓
 61248 Palma Collado, Nahuel          34   ✅✅🟢✅✅❓
 61319 Carabajal, José Gabriel        30   ✅✅🟢✅❓❓
 61562 Helguera, Agustina Elizabeth   30   ✅✅🟢✅❓❓

@@ -25,16 +25,17 @@ class Program {
         clase.CopiarPractico(int.Parse(tp), forzar);
     }
 
-    static void VerificarPresentacion(Clase clase, int practico) {
+    static void VerificarPresentacion(Clase clase, int practico, bool guardar= true) {
         Consola.Escribir("=== Verificar presentación de trabajo práctico ===", ConsoleColor.Cyan);
         clase.NormalizarCarpetas();
         clase.Reiniciar();
-        for (var p = 1; p <= practico; p++) {
+        // for (var p = 1; p <= practico; p++) {
+        for (var p = practico; p <= practico; p++) {
             clase.VerificaPresentacionPractico(p);
         }
         var asistencias = Asistencias.Cargar(false);
         clase.CargarAsistencia(asistencias);
-        clase.Guardar();
+        if(guardar) clase.Guardar();
     }
 
     static void ListarNoPresentaron(Clase clase, int practico) {
@@ -415,7 +416,7 @@ class Program {
             return;
         }
 
-        int practico = 6;
+        int practico = 7;
 
         var menu = new TUP.Menu("Bienvenido al sistema de gestión de alumnos");
         menu.Agregar("Listar alumnos", () => ListarAlumnos(clase));
@@ -427,9 +428,22 @@ class Program {
         // menu.Agregar("  P2: Ejecutar", () => ProbarTP6(clase));
         menu.Agregar("  P2: Presentaron", () => clase.Presentaron(6).ListarAlumnos());
         menu.Agregar("  P2: No presentaron", () => clase.NoPresentaron(6).Continuan().ListarAlumnos());
-        menu.Agregar("  P2: Con error ", () => clase.ConError(6).ListarAlumnos());
+        // menu.Agregar("  P2: Con error ", () => clase.ConError(6).ListarAlumnos());
         menu.Agregar("  P2: Generar informe", () => InformePractico(clase));
         menu.Agregar("Probar por Legajo", () => ProbarPorLegajo(clase));
+        menu.Agregar("Traer TP7", () =>
+        {
+            VerificarPresentacion(clase, practico, false);
+            var noPresentaronTP7 = clase.NoPresentaron(7);
+            Consola.Escribir("=== Alumnos que NO presentaron TP7 ===", ConsoleColor.Cyan);
+            noPresentaronTP7.ListarAlumnos();
+            // RegistrarNotas(clase);
+            
+            var presentaronTP7 = clase.Presentaron(7);
+            Consola.Escribir("=== Alumnos que presentaron TP7 ===", ConsoleColor.Cyan);
+            presentaronTP7.ListarAlumnos();
+            
+        });
 
         menu.Ejecutar();
 
