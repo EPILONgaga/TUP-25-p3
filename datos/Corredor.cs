@@ -26,19 +26,18 @@ public class Corredor {
             await MatarProcesoPuerto("5177");
 
             var resultadoServidor = await EjecutarProyecto(carpetaServidor);
-            if (resultadoServidor != "ok") {
+            if (!resultadoServidor.StartsWith("ok")) {
                 return resultadoServidor.Contains("base de datos")
                     ? ResultadoEjecucion.FallaBaseDatos
                     : ResultadoEjecucion.FallaServidor;
             }
-            Consola.Escribir("[Auditoría] Servidor iniciado correctamente", ConsoleColor.Yellow);
+            Consola.Escribir($"[Auditoría] Servidor iniciado correctamente en {resultadoServidor}", ConsoleColor.Yellow);
             // Esperar un poco para que el servidor inicie
             await Task.Delay(1000);
 
             // Ejecutar cliente
             var resultadoCliente = await EjecutarProyecto(carpetaCliente);
-            if (resultadoCliente != "ok")
-            {
+            if (!resultadoCliente.StartsWith("ok")) {
 
                 return resultadoCliente.Contains("base de datos")
                     ? ResultadoEjecucion.FallaBaseDatos
@@ -46,22 +45,35 @@ public class Corredor {
             }
 
             // Esperar un poco para que el cliente inicie
-            Consola.Escribir("[Auditoría] Cliente iniciado correctamente", ConsoleColor.Yellow);
+            Consola.Escribir($"[Auditoría] Cliente iniciado correctamente en {resultadoCliente}", ConsoleColor.Yellow);
             await Task.Delay(1000);
 
             // Abrir el navegador en localhost:5177
-            try {
-                var psi = new ProcessStartInfo {
+            Trace.WriteLine($"[Auditoría] Intentando abrir navegador en http://localhost:5177");
+            var matchPuerto = Regex.Match(resultadoCliente, @"ok:(\d+)");
+            var puerto = matchPuerto.Success ? matchPuerto.Groups[1].Value : string.Empty;
+            if (string.IsNullOrEmpty(puerto))
+            {
+                puerto = "5177"; // Valor por defecto si no se pudo extraer el puerto
+            }
+            puerto = $"http://localhost:{puerto}";
+            try
+            {
+                Trace.WriteLine($"[Auditoría] Intentando abrir navegador en {puerto} y corren en {resultadoCliente}");
+                var psi = new ProcessStartInfo
+                {
                     FileName = "open",
-                    Arguments = "http://localhost:5184",
+                    Arguments = puerto,
                     UseShellExecute = true
                 };
                 Process.Start(psi);
-                Consola.Escribir("[Auditoría] Navegador abierto en http://localhost:5184", ConsoleColor.Yellow);
+                Consola.Escribir($"[Auditoría] Navegador abierto en {puerto}", ConsoleColor.Yellow);
                 return ResultadoEjecucion.Ok;
-            } catch {
-                return ResultadoEjecucion.FallaNavegador;
             }
+            catch
+                {
+                    return ResultadoEjecucion.FallaNavegador;
+                }
         } catch {
             return ResultadoEjecucion.FallaGeneral;
         }
@@ -81,13 +93,24 @@ public class Corredor {
                     CreateNoWindow = true
                 };
 
-                using var proceso = new Process { StartInfo = psi };
+                var proceso = new Process { StartInfo = psi };
                 proceso.Start();
 
-                // Leer resultado tras Delay
-                await Task.Delay(1000);
+                // Leer algunas líneas del output sin agotar el stream
+                string puerto = string.Empty;
+                for (int i = 0; i < 10; i++) {
+                    if (proceso.HasExited) break;
+                    if (proceso.StandardOutput.Peek() > -1) {
+                        string linea = await proceso.StandardOutput.ReadLineAsync() ?? string.Empty;
+                        puerto = ExtraerPuerto(linea);
+                        if (!string.IsNullOrEmpty(puerto)) break;
+                    } else {
+                        await Task.Delay(100); // Esperar un poco si no hay línea disponible
+                    }
+                }
+
                 if (!proceso.HasExited) {
-                    return "ok";
+                    return !string.IsNullOrEmpty(puerto) ? $"ok:{puerto}" : "ok:desconocido";
                 }
                 var output = await proceso.StandardOutput.ReadToEndAsync();
                 var errorCompleto = output + await proceso.StandardError.ReadToEndAsync();
@@ -108,8 +131,6 @@ public class Corredor {
                 } else {
                     return $"error: {errorCompleto}";
                 }
-
-                return $"ok en: {puertoBloqueado}";
             } catch (Exception ex) {
                 if (intento == 2) {
                     return $"error: {ex.Message}";
@@ -117,8 +138,19 @@ public class Corredor {
                 await MatarProcesosPuertos();
             }
         }
-
         return $"error: Falló después de 2 intentos";
+    }
+
+    // Extrae el puerto de una línea de output típica de dotnet run
+    private static string ExtraerPuerto(string linea) {
+        // Busca patrones como: Now listening on: http://localhost:5184
+        if (linea.Contains("Now listening on")) {
+            var match = Regex.Match(linea, @"http://localhost:(\d+)");
+            if (match.Success && match.Groups.Count > 1) {
+                return match.Groups[1].Value;
+            }
+        }
+        return string.Empty;
     }
 
     // Nuevo método para matar procesos en puerto específico
@@ -135,7 +167,9 @@ public class Corredor {
                         if (int.TryParse(pid.Trim(), out int pidNumero)) {
                             try {
                                 var kill = Process.Start("kill", $"-9 {pidNumero}");
-                                await kill?.WaitForExitAsync();
+                                if (kill != null) {
+                                    await kill.WaitForExitAsync();
+                                }
                             } catch { }
                         }
                     }
@@ -153,18 +187,19 @@ public class Corredor {
                 RedirectStandardOutput = true,
                 CreateNoWindow = true
             };
-            using (var proceso = Process.Start(psi)) {
-                if (proceso != null) {
-                    var salida = await proceso.StandardOutput.ReadToEndAsync();
-                    await proceso.WaitForExitAsync();
-                    if (!string.IsNullOrWhiteSpace(salida)) {
-                        foreach (var pid in salida.Trim().Split('\n')) {
-                            if (int.TryParse(pid.Trim(), out int pidNumero)) {
-                                try {
-                                    var kill = Process.Start("kill", $"-9 {pidNumero}");
-                                    await kill?.WaitForExitAsync();
-                                } catch { }
-                            }
+            using var proceso = Process.Start(psi);
+            if (proceso != null) {
+                var salida = await proceso.StandardOutput.ReadToEndAsync();
+                await proceso.WaitForExitAsync();
+                if (!string.IsNullOrWhiteSpace(salida)) {
+                    foreach (var pid in salida.Trim().Split('\n')) {
+                        if (int.TryParse(pid.Trim(), out int pidNumero)) {
+                            try {
+                                var kill = Process.Start("kill", $"-9 {pidNumero}");
+                                if (kill != null) {
+                                    await kill.WaitForExitAsync();
+                                }
+                            } catch { }
                         }
                     }
                 }

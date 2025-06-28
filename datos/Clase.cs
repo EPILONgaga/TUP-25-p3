@@ -49,7 +49,7 @@ class Clase : IEnumerable<Alumno>
                 var creditos = int.Parse(partes[6]);
                 var parcial = int.Parse(partes[7]);
                 var github = partes.Length > 9 ? partes[9].Trim() : "";
-                Console.WriteLine($"Legajo: {legajo} - Nombre: {nombre} - Teléfono: {telefono} - Asistencias: {asistencias} - Practicos: {practicos} - Créditos: {creditos} - Parcial: {parcial} - GitHub: {github}");
+                // Console.WriteLine($"Legajo: {legajo} - Nombre: {nombre} - Teléfono: {telefono} - Asistencias: {asistencias} - Practicos: {practicos} - Créditos: {creditos} - Parcial: {parcial} - GitHub: {github}");
                 // Alumno(int orden, int legajo, string apellido, string nombre, string telefono, string comision, string practicos, int asistencias = 0, int resultado=0, int notas=0) {
 
                 Alumno alumno = new Alumno(
