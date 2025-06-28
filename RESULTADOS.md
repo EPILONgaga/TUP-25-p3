@@ -111,17 +111,13 @@
 62136 Muse, Alejandro                30   ✅✅🟢✅✅🟢
 61422 Pedraza, Estaban Daniel        28   ✅✅🟢✅✅🟢
 61962 Robledo, Rocio Micaela         15   ✅✅🟢✅✅🟢
-```
-
-## Alumnos que deben completar practicos
-```
-61905 Martinez, Augusto              23   ✅❓🟢✅❓🟢
+61905 Martinez, Augusto              23   ✅✅🟢✅✅🟢
 ```
 
 ## Alumnos que no presentaron
 ```
 61052 Reynoso, Braian Nicolás        34   ✅✅🟢✅✅❓
-61252 Aguirre Rojas, Lourdes Valenti 24   ✅✅🟢❓❓❓
+61252 Aguirre Rojas, Lourdes Valenti 24   ✅✅🟢✅✅❓
 61914 Robles, Leandro Gonzalo        17   ✅✅🟢✅✅❓
 ```
 
